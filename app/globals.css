@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: system-ui, sans-serif;
+  }
+  
+  body {
+    @apply bg-white text-accent-900 antialiased;
+  }
+  
+  * {
+    @apply border-accent-200;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-white;
+  }
+  
+  .btn-primary {
+    @apply btn bg-primary-600 text-white hover:bg-primary-700;
+  }
+  
+  .btn-secondary {
+    @apply btn bg-accent-100 text-accent-900 hover:bg-accent-200 border border-accent-300;
+  }
+  
+  .btn-success {
+    @apply btn bg-success-600 text-white hover:bg-success-700;
+  }
+  
+  .btn-warning {
+    @apply btn bg-warning-600 text-white hover:bg-warning-700;
+  }
+  
+  .btn-error {
+    @apply btn bg-error-600 text-white hover:bg-error-700;
+  }
+  
+  .btn-ghost {
+    @apply btn hover:bg-accent-100 hover:text-accent-900;
+  }
+  
+  .input {
+    @apply flex h-10 w-full rounded-md border border-accent-300 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-accent-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  
+  .card {
+    @apply rounded-lg border border-accent-200 bg-white shadow-sm;
+  }
+  
+  .skeleton {
+    @apply animate-pulse rounded-md bg-accent-200;
+  }
+}
+
+/* High contrast focus indicators for accessibility */
+.focus-visible\\:ring-2:focus-visible {
+  outline: 2px solid #0369a1;
+  outline-offset: 2px;
+}
+
+/* Status indicators */
+.status-pending {
+  @apply bg-warning-100 text-warning-800 border border-warning-200;
+}
+
+.status-approved {
+  @apply bg-success-100 text-success-800 border border-success-200;
+}
+
+.status-rejected {
+  @apply bg-error-100 text-error-800 border border-error-200;
+}
+
+.status-issued {
+  @apply bg-primary-100 text-primary-800 border border-primary-200;
+}
+
+/* Toast animations */
+.toast-enter {
+  animation: slideIn 0.3s ease-out;
+}
+
+.toast-exit {
+  animation: fadeOut 0.3s ease-in;
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
