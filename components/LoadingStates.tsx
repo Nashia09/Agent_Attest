@@ -1,7 +1,7 @@
 import { Skeleton } from '@/components/ui/skeleton'
 
 export const CardSkeleton = () => (
-  <div className="card p-6 animate-pulse">
+  <div className="rounded-xl border border-white/10 bg-surface-900 shadow-xl transition-all hover:border-primary-500/30 relative overflow-hidden p-6 animate-pulse">
     <div className="flex items-center space-x-3 mb-4">
       <div className="w-10 h-10 bg-accent-200 rounded-full"></div>
       <div className="flex-1">
@@ -18,7 +18,7 @@ export const CardSkeleton = () => (
 )
 
 export const FormSkeleton = () => (
-  <div className="card p-6 animate-pulse">
+  <div className="rounded-xl border border-white/10 bg-surface-900 shadow-xl transition-all hover:border-primary-500/30 relative overflow-hidden p-6 animate-pulse">
     <div className="space-y-4">
       {[1, 2, 3, 4].map((i) => (
         <div key={i}>
@@ -32,7 +32,7 @@ export const FormSkeleton = () => (
 )
 
 export const TableSkeleton = ({ rows = 5 }: { rows?: number }) => (
-  <div className="card overflow-hidden">
+  <div className="rounded-xl border border-white/10 bg-surface-900 shadow-xl transition-all hover:border-primary-500/30 relative overflow-hidden">
     <div className="divide-y divide-accent-200">
       {/* Header */}
       <div className="bg-accent-50 px-6 py-3">

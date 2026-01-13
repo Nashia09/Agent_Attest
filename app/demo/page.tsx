@@ -1,19 +1,19 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { 
-  Play, 
-  FileText, 
-  Search, 
-  Shield, 
-  CheckCircle, 
-  XCircle, 
-  Ban, 
+import {
+  Play,
+  FileText,
+  Search,
+  Shield,
+  CheckCircle,
+  XCircle,
+  Ban,
   ArrowRight,
   Clock,
-  AlertCircle
+  RefreshCw
 } from 'lucide-react'
 import { useToast } from '@/components/ToastProvider'
 
@@ -97,7 +97,7 @@ export default function DemoPage() {
         app.credentialId = credentialId
         app.issuedAt = new Date().toISOString()
         localStorage.setItem(`application_${demoResults.applicationId}`, JSON.stringify(app))
-        
+
         // Store credential
         const credential = {
           id: credentialId,
@@ -112,7 +112,7 @@ export default function DemoPage() {
           anchorTx: 'tx_demo_' + Date.now().toString(36)
         }
         localStorage.setItem(`credential_${credentialId}`, JSON.stringify(credential))
-        
+
         setDemoResults(prev => ({ ...prev, credentialId }))
         toast('success', 'Credential issued', `ID: ${credentialId}`)
       }
@@ -143,7 +143,7 @@ export default function DemoPage() {
         await new Promise(resolve => setTimeout(resolve, 1000))
         const credential = JSON.parse(localStorage.getItem(`credential_${demoResults.credentialId}`)!)
         const amount = 5000 // Within 10k limit
-        
+
         if (amount <= credential.maxTransactionValue) {
           toast('success', 'Transaction approved', `$${amount.toLocaleString()} within limit`)
           setDemoResults(prev => ({ ...prev, transactionBlocked: false }))
@@ -224,22 +224,22 @@ export default function DemoPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-5xl mx-auto py-12">
       {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-accent-900 mb-2">AgentAttest Demo</h1>
-        <p className="text-accent-600">
-          Complete credential lifecycle demonstration in under 2 minutes
+      <div className="text-center mb-10">
+        <h1 className="text-4xl font-bold text-white mb-2">AgentAttest Demo</h1>
+        <p className="text-accent-400 max-w-2xl mx-auto">
+          Experience the complete credential lifecycle in under 2 minutes, from application to revocation.
         </p>
       </div>
 
       {/* Demo Controls */}
-      <div className="card p-6 mb-8 text-center">
+      <div className="rounded-xl border border-white/10 bg-surface-900 shadow-xl transition-all hover:border-primary-500/30 relative overflow-hidden p-8 mb-8 text-center bg-surface-100/30 backdrop-blur-lg border-primary-500/20">
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
           <button
             onClick={runDemo}
             disabled={isRunning}
-            className="btn-primary px-8 py-3 text-lg inline-flex items-center justify-center"
+            className="inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 disabled:opacity-50 disabled:pointer-events-none uppercase tracking-wider relative overflow-hidden bg-primary-600 text-white hover:bg-primary-500 shadow-[0_0_15px_rgba(139,92,246,0.5)] px-8 py-4 text-lg inline-flex items-center justify-center min-w-[200px]"
           >
             {isRunning ? (
               <>
@@ -256,13 +256,14 @@ export default function DemoPage() {
           <button
             onClick={resetDemo}
             disabled={isRunning}
-            className="btn-secondary px-8 py-3 text-lg"
+            className="inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 disabled:opacity-50 disabled:pointer-events-none uppercase tracking-wider relative overflow-hidden bg-surface-100 text-white hover:bg-surface-200 border border-white/10 hover:border-primary-400/50 backdrop-blur-sm px-8 py-4 text-lg inline-flex items-center"
           >
-            Reset
+            <RefreshCw className="w-5 h-5 mr-2" />
+            Reset State
           </button>
         </div>
-        <p className="text-sm text-accent-500">
-          This demo will run through the complete credential lifecycle automatically
+        <p className="text-sm text-gray-400">
+          This demo simulates blockchain interactions and automated verification steps
         </p>
       </div>
 
@@ -274,23 +275,23 @@ export default function DemoPage() {
           const isCompleted = step.status === 'completed'
           const isFailed = step.status === 'failed'
 
+          let statusColor = 'border-white/5 bg-surface-100/10'
+          if (isActive) statusColor = 'border-primary-500 ring-1 ring-primary-500 bg-primary-900/10'
+          if (isCompleted) statusColor = 'border-success-500/50 bg-success-900/10'
+          if (isFailed) statusColor = 'border-error-500/50 bg-error-900/10'
+
           return (
             <div
               key={step.id}
-              className={`card p-4 transition-all ${
-                isActive ? 'ring-2 ring-primary-500' :
-                isCompleted ? 'bg-success-50 border-success-200' :
-                isFailed ? 'bg-error-50 border-error-200' : ''
-              }`}
+              className={`rounded-xl border border-white/10 bg-surface-900 shadow-xl transition-all hover:border-primary-500/30 relative overflow-hidden p-4 transition-all duration-300 ${statusColor} hover:border-white/20`}
             >
               <div className="flex items-center space-x-4">
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    isCompleted ? 'bg-success-600 text-white' :
-                    isFailed ? 'bg-error-600 text-white' :
-                    isActive ? 'bg-primary-600 text-white' :
-                    'bg-accent-200 text-accent-500'
-                  }`}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${isCompleted ? 'bg-success-500 text-white shadow-[0_0_10px_rgba(34,197,94,0.4)]' :
+                    isFailed ? 'bg-error-500 text-white' :
+                      isActive ? 'bg-primary-500 text-white animate-pulse-slow' :
+                        'bg-surface-200/50 text-gray-500'
+                    }`}
                 >
                   {isCompleted ? (
                     <CheckCircle className="w-5 h-5" />
@@ -303,11 +304,13 @@ export default function DemoPage() {
                   )}
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-accent-900">{step.title}</h3>
-                  <p className="text-sm text-accent-600">{step.description}</p>
+                  <h3 className={`font-semibold ${isActive || isCompleted ? 'text-white' : 'text-gray-400'}`}>
+                    {step.title}
+                  </h3>
+                  <p className="text-sm text-gray-400">{step.description}</p>
                 </div>
-                <div className="text-sm text-accent-500">
-                  Step {index + 1} of {steps.length}
+                <div className="text-xs text-gray-500 font-mono">
+                  STEP {String(index + 1).padStart(2, '0')}
                 </div>
               </div>
             </div>
@@ -317,26 +320,30 @@ export default function DemoPage() {
 
       {/* Demo Results */}
       {Object.keys(demoResults).length > 0 && (
-        <div className="card p-6 mb-8">
-          <h3 className="text-lg font-semibold text-accent-900 mb-4">Demo Results</h3>
+        <div className="rounded-xl border border-white/10 bg-surface-900 shadow-xl transition-all hover:border-primary-500/30 relative overflow-hidden p-6 mb-8 border-primary-500/30 bg-surface-100/20 backdrop-blur-md">
+          <h3 className="text-lg font-bold text-white mb-4 flex items-center">
+            <Shield className="w-5 h-5 mr-2 text-primary-400" />
+            Live Demo Results
+          </h3>
           <div className="grid md:grid-cols-2 gap-4">
             {demoResults.applicationId && (
-              <div>
-                <span className="text-sm text-accent-600">Application ID</span>
-                <div className="font-mono text-sm text-accent-900">{demoResults.applicationId}</div>
+              <div className="p-3 bg-white/5 rounded border border-white/5">
+                <span className="text-xs text-gray-400 block mb-1">Generated Application ID</span>
+                <div className="font-mono text-sm text-primary-300">{demoResults.applicationId}</div>
               </div>
             )}
             {demoResults.credentialId && (
-              <div>
-                <span className="text-sm text-accent-600">Credential ID</span>
-                <div className="font-mono text-sm text-accent-900">{demoResults.credentialId}</div>
+              <div className="p-3 bg-white/5 rounded border border-white/5">
+                <span className="text-xs text-gray-400 block mb-1">Issued Credential ID</span>
+                <div className="font-mono text-sm text-success-300">{demoResults.credentialId}</div>
               </div>
             )}
             {demoResults.transactionBlocked !== undefined && (
-              <div>
-                <span className="text-sm text-accent-600">Transaction Blocking</span>
-                <div className={`font-medium ${demoResults.transactionBlocked ? 'text-error-600' : 'text-success-600'}`}>
-                  {demoResults.transactionBlocked ? 'BLOCKED ✓' : 'ALLOWED ✓'}
+              <div className={`p-3 rounded border ${demoResults.transactionBlocked ? 'bg-error-500/10 border-error-500/30' : 'bg-success-500/10 border-success-500/30'}`}>
+                <span className="text-xs text-gray-400 block mb-1">Transaction Status</span>
+                <div className={`font-bold flex items-center ${demoResults.transactionBlocked ? 'text-error-400' : 'text-success-400'}`}>
+                  {demoResults.transactionBlocked ? <XCircle className="w-4 h-4 mr-2" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                  {demoResults.transactionBlocked ? 'BLOCKED' : 'ALLOWED'}
                 </div>
               </div>
             )}
@@ -345,28 +352,26 @@ export default function DemoPage() {
       )}
 
       {/* Quick Actions */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <Link href="/apply" className="btn-secondary flex-1 text-center">
+      <div className="flex flex-col sm:flex-row gap-4 mt-8">
+        <Link href="/apply" className="inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 disabled:opacity-50 disabled:pointer-events-none uppercase tracking-wider relative overflow-hidden bg-surface-100 text-white hover:bg-surface-200 border border-white/10 hover:border-primary-400/50 backdrop-blur-sm flex-1 text-center py-4 text-base">
           Submit Real Application
         </Link>
-        <Link href="/verify" className="btn-primary flex-1 text-center">
+        <Link href="/verify" className="inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 disabled:opacity-50 disabled:pointer-events-none uppercase tracking-wider relative overflow-hidden bg-primary-600 text-white hover:bg-primary-500 shadow-[0_0_15px_rgba(139,92,246,0.5)] flex-1 text-center py-4 text-base">
           Verify Credentials
         </Link>
-        <Link href="/dashboard" className="btn-primary flex-1 text-center">
+        <Link href="/dashboard" className="inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 disabled:opacity-50 disabled:pointer-events-none uppercase tracking-wider relative overflow-hidden bg-surface-100 text-white hover:bg-surface-200 border border-white/10 hover:border-primary-400/50 backdrop-blur-sm flex-1 text-center py-4 text-base">
           Admin Dashboard
         </Link>
       </div>
 
       {/* Demo Notes */}
-      <div className="mt-8 card p-6 bg-accent-50">
-        <h3 className="font-semibold text-accent-900 mb-2">Demo Notes</h3>
-        <ul className="text-sm text-accent-600 space-y-1">
-          <li>• All data is stored locally in your browser for demonstration purposes</li>
-          <li>• The demo simulates a complete credential lifecycle in seconds</li>
-          <li>• In production, each step would involve real cryptographic operations</li>
-          <li>• Risk scores are calculated based on requested permissions and agent history</li>
-          <li>• Revocation is instant and blocks all subsequent transactions</li>
-        </ul>
+      <div className="mt-12 p-6 rounded-xl bg-surface-50/5 text-center border border-white/5">
+        <h3 className="font-semibold text-gray-300 mb-2">Technical Note</h3>
+        <p className="text-sm text-gray-400 max-w-3xl mx-auto">
+          This demo runs primarily in your browser using local storage to simulate the workflow.
+          The production version uses the Amadeus Network SDK to anchor credentials on-chain
+          with real cryptographic signatures found in <code>/lib/amadeus.ts</code>.
+        </p>
       </div>
     </div>
   )
