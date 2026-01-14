@@ -3,8 +3,9 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Upload, FileText, Check, AlertCircle, ArrowLeft } from 'lucide-react'
+import { Upload, FileText, Check, AlertCircle, ArrowLeft, Shield, Wallet } from 'lucide-react'
 import { useToast } from '@/components/ToastProvider'
+import { useWallet } from '@/lib/WalletContext'
 import CryptoJS from 'crypto-js'
 
 interface FormData {
@@ -26,6 +27,7 @@ const PERMISSION_OPTIONS = [
 export default function ApplyPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const { isConnected, address, balance } = useWallet()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isCalculatingHash, setIsCalculatingHash] = useState(false)
   const [formData, setFormData] = useState<FormData>({
@@ -36,6 +38,9 @@ export default function ApplyPage() {
     claimedPermissions: []
   })
 
+  // Estimated transaction fee in AMA
+  const ESTIMATED_FEE = 0.001
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
@@ -45,7 +50,7 @@ export default function ApplyPage() {
       const arrayBuffer = await file.arrayBuffer()
       const wordArray = CryptoJS.lib.WordArray.create(arrayBuffer as any)
       const hash = CryptoJS.SHA256(wordArray).toString()
-      
+
       setFormData(prev => ({ ...prev, artifactHash: hash }))
       toast('success', 'File hash calculated', `SHA256: ${hash.substring(0, 16)}...`)
     } catch (error) {
@@ -66,25 +71,43 @@ export default function ApplyPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Check wallet connection
+    if (!isConnected) {
+      toast('warning', 'Wallet Not Connected', 'Please connect your Amadeus wallet to submit an application')
+      return
+    }
+
+    // Check sufficient balance
+    if (balance !== null && balance < ESTIMATED_FEE) {
+      toast('error', 'Insufficient Balance', `You need at least ${ESTIMATED_FEE} AMA to submit this application`)
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
-      // Mock API call
+      // In a real implementation, this would:
+      // 1. Create a transaction using the wallet
+      // 2. Sign it with the connected wallet
+      // 3. Submit to Amadeus network
+      // For now, we'll simulate the process
       await new Promise(resolve => setTimeout(resolve, 1500))
-      
+
       const applicationId = 'app_' + Date.now().toString(36)
-      
+
       // Store in localStorage for demo purposes
       const application = {
         id: applicationId,
         ...formData,
+        walletAddress: address,
         status: 'PENDING',
         submittedAt: new Date().toISOString(),
         riskScore: calculateRiskScore(formData)
       }
-      
+
       localStorage.setItem(`application_${applicationId}`, JSON.stringify(application))
-      
+
       toast('success', 'Application submitted successfully', `ID: ${applicationId}`)
       router.push(`/status/${applicationId}`)
     } catch (error) {
@@ -103,197 +126,251 @@ export default function ApplyPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-4xl mx-auto py-12">
       <div className="mb-8">
-        <Link href="/" className="text-sm text-accent-600 hover:text-accent-900 flex items-center">
+        <Link href="/" className="text-sm text-primary-400 hover:text-white flex items-center transition-colors">
           <ArrowLeft className="w-4 h-4 mr-1" />
           Back to Home
         </Link>
       </div>
 
-      <div className="card p-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-accent-900 mb-2">Apply for Agent Credentials</h1>
-          <p className="text-accent-600">
-            Submit your agent's decentralized identifier (DID) and artifact hash for verification.
+      {/* Wallet Connection Notice */}
+      {!isConnected && (
+        <div className="mb-6 p-4 bg-warning-500/10 border border-warning-500/30 rounded-xl backdrop-blur-sm">
+          <div className="flex items-start gap-3">
+            <Wallet className="w-5 h-5 text-warning-400 mt-0.5" />
+            <div>
+              <h3 className="text-sm font-semibold text-warning-300 mb-1">Wallet Connection Required</h3>
+              <p className="text-xs text-warning-200/80">
+                You need to connect your Amadeus wallet to submit an application. Transaction fees will be paid from your connected wallet.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="rounded-xl border border-white/10 bg-surface-900 shadow-xl transition-all hover:border-primary-500/30 relative overflow-hidden p-8 bg-surface-900/40 border-primary-500/20 backdrop-blur-xl relative overflow-hidden">
+        {/* Decorative background element */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary-500/5 rounded-full blur-3xl -z-10"></div>
+
+        <div className="mb-10 text-center">
+          <div className="w-16 h-16 bg-primary-500/20 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-primary-500/30 shadow-[0_0_20px_rgba(139,92,246,0.15)]">
+            <FileText className="w-8 h-8 text-primary-400" />
+          </div>
+          <h1 className="text-3xl font-bold text-white mb-2">Apply for Agent Credentials</h1>
+          <p className="text-accent-400 max-w-lg mx-auto">
+            Submit your agent's decentralized identifier (DID) and artifact hash for verification on the Amadeus network.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Agent DID */}
-          <div>
-            <label htmlFor="agentDid" className="block text-sm font-medium text-accent-900 mb-2">
-              Agent DID *
-            </label>
-            <input
-              id="agentDid"
-              type="text"
-              required
-              className="input"
-              placeholder="did:example:123456789"
-              value={formData.agentDid}
-              onChange={(e) => setFormData(prev => ({ ...prev, agentDid: e.target.value }))}
-            />
-            <p className="text-sm text-accent-500 mt-1">
-              Your agent's decentralized identifier
-            </p>
-          </div>
-
-          {/* Artifact Hash/File Upload */}
-          <div>
-            <label className="block text-sm font-medium text-accent-900 mb-2">
-              Artifact Hash or File Upload *
-            </label>
-            
-            {/* File Upload */}
-            <div className="mb-4">
-              <input
-                id="file-upload"
-                type="file"
-                className="hidden"
-                onChange={handleFileUpload}
-                accept=".json,.txt,.bin"
-              />
-              <label
-                htmlFor="file-upload"
-                className="btn-secondary cursor-pointer inline-flex items-center"
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                {isCalculatingHash ? 'Calculating...' : 'Upload File'}
+        <form onSubmit={handleSubmit} className="space-y-8">
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Agent DID */}
+            <div className="md:col-span-2">
+              <label htmlFor="agentDid" className="block text-sm font-medium text-gray-300 mb-2">
+                Agent DID *
               </label>
+              <div className="relative group">
+                <input
+                  id="agentDid"
+                  type="text"
+                  required
+                  className="flex h-11 w-full rounded-lg border border-white/10 bg-surface-50 px-4 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:border-transparent transition-all backdrop-blur-sm text-white pl-10"
+                  placeholder="did:example:123456789"
+                  value={formData.agentDid}
+                  onChange={(e) => setFormData(prev => ({ ...prev, agentDid: e.target.value }))}
+                />
+                <Shield className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-primary-400 transition-colors" />
+              </div>
+              <p className="text-xs text-gray-400 mt-2 ml-1">
+                Your agent's decentralized identifier used for on-chain verification
+              </p>
             </div>
 
-            {/* Manual Hash Input */}
-            <div className="relative">
-              <input
-                id="artifactHash"
-                type="text"
-                required
-                className="input pr-10"
-                placeholder="SHA256 hash of your artifact"
-                value={formData.artifactHash}
-                onChange={(e) => setFormData(prev => ({ ...prev, artifactHash: e.target.value }))}
-              />
-              {formData.artifactHash && (
-                <Check className="w-5 h-5 text-success-600 absolute right-3 top-1/2 -translate-y-1/2" />
-              )}
-            </div>
-            <p className="text-sm text-accent-500 mt-1">
-              Upload a file to auto-calculate hash, or paste your SHA256 hash manually
-            </p>
-          </div>
+            {/* Owner Information */}
 
-          {/* Owner Information */}
-          <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="ownerName" className="block text-sm font-medium text-accent-900 mb-2">
+              <label htmlFor="ownerName" className="block text-sm font-medium text-gray-300 mb-2">
                 Owner Name *
               </label>
               <input
                 id="ownerName"
                 type="text"
                 required
-                className="input"
+                className="flex h-11 w-full rounded-lg border border-white/10 bg-surface-50 px-4 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:border-transparent transition-all backdrop-blur-sm text-white"
                 placeholder="John Doe"
                 value={formData.ownerName}
                 onChange={(e) => setFormData(prev => ({ ...prev, ownerName: e.target.value }))}
               />
             </div>
             <div>
-              <label htmlFor="contactEmail" className="block text-sm font-medium text-accent-900 mb-2">
+              <label htmlFor="contactEmail" className="block text-sm font-medium text-gray-300 mb-2">
                 Contact Email *
               </label>
               <input
                 id="contactEmail"
                 type="email"
                 required
-                className="input"
+                className="flex h-11 w-full rounded-lg border border-white/10 bg-surface-50 px-4 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:border-transparent transition-all backdrop-blur-sm text-white"
                 placeholder="john@example.com"
                 value={formData.contactEmail}
                 onChange={(e) => setFormData(prev => ({ ...prev, contactEmail: e.target.value }))}
               />
             </div>
+
+            {/* Artifact Hash/File Upload */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-300 mb-4">
+                Artifact Verification *
+              </label>
+
+              <div className="bg-surface-50/50 rounded-xl p-6 border border-dashed border-white/10 hover:border-primary-500/50 transition-colors">
+                {/* File Upload */}
+                <div className="flex flex-col items-center justify-center mb-6">
+                  <input
+                    id="file-upload"
+                    type="file"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                    accept=".json,.txt,.bin"
+                  />
+                  <label
+                    htmlFor="file-upload"
+                    className="inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 disabled:opacity-50 disabled:pointer-events-none uppercase tracking-wider relative overflow-hidden bg-surface-100 text-white hover:bg-surface-200 border border-white/10 hover:border-primary-400/50 backdrop-blur-sm cursor-pointer inline-flex items-center px-6 py-3"
+                  >
+                    <Upload className="w-5 h-5 mr-2" />
+                    {isCalculatingHash ? 'Calculating Hash...' : 'Upload Artifact File'}
+                  </label>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Supported: JSON, TXT, BIN (Max 50MB)
+                  </p>
+                </div>
+
+                <div className="relative flex items-center">
+                  <div className="flex-grow border-t border-white/10"></div>
+                  <span className="flex-shrink-0 mx-4 text-gray-400 text-xs uppercase">Or enter hash manually</span>
+                  <div className="flex-grow border-t border-white/10"></div>
+                </div>
+
+                {/* Manual Hash Input */}
+                <div className="relative mt-4">
+                  <input
+                    id="artifactHash"
+                    type="text"
+                    required
+                    className="flex h-11 w-full rounded-lg border border-white/10 bg-surface-50 px-4 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:border-transparent transition-all backdrop-blur-sm text-white pr-10 font-mono text-xs md:text-sm"
+                    placeholder="SHA256 hash of your artifact"
+                    value={formData.artifactHash}
+                    onChange={(e) => setFormData(prev => ({ ...prev, artifactHash: e.target.value }))}
+                  />
+                  {formData.artifactHash && (
+                    <Check className="w-5 h-5 text-success-400 absolute right-3 top-1/2 -translate-y-1/2" />
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Claimed Permissions */}
           <div>
-            <label className="block text-sm font-medium text-accent-900 mb-4">
-              Claimed Permissions *
+            <label className="block text-sm font-medium text-gray-300 mb-4">
+              Required Permissions
             </label>
-            <div className="space-y-3">
+            <div className="grid md:grid-cols-2 gap-3">
               {PERMISSION_OPTIONS.map((permission) => (
                 <label
                   key={permission.value}
-                  className="flex items-start space-x-3 p-3 rounded-lg border border-accent-200 hover:bg-accent-50 cursor-pointer"
+                  className={`flex items-start space-x-3 p-4 rounded-xl border cursor-pointer transition-all duration-200 ${formData.claimedPermissions.includes(permission.value)
+                    ? 'bg-primary-900/20 border-primary-500/50 shadow-[0_0_10px_rgba(139,92,246,0.1)]'
+                    : 'bg-surface-50/30 border-white/5 hover:border-white/20'
+                    }`}
                 >
+                  <div className={`mt-1 h-5 w-5 rounded border flex items-center justify-center transition-colors ${formData.claimedPermissions.includes(permission.value)
+                    ? 'bg-primary-500 border-primary-500'
+                    : 'border-gray-500 bg-transparent'
+                    }`}>
+                    {formData.claimedPermissions.includes(permission.value) && <Check className="w-3.5 h-3.5 text-white" />}
+                  </div>
                   <input
                     type="checkbox"
-                    className="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-accent-300 rounded"
+                    className="hidden"
                     checked={formData.claimedPermissions.includes(permission.value)}
                     onChange={() => handlePermissionToggle(permission.value)}
                   />
                   <div className="flex-1">
-                    <div className="text-sm font-medium text-accent-900">
+                    <div className={`text-sm font-medium ${formData.claimedPermissions.includes(permission.value) ? 'text-primary-200' : 'text-gray-300'
+                      }`}>
                       {permission.label}
                     </div>
-                    <div className="text-sm text-accent-500">
+                    <div className="text-xs text-gray-500 mt-1">
                       {permission.description}
                     </div>
                   </div>
                 </label>
               ))}
             </div>
-            <p className="text-sm text-accent-500 mt-2">
-              Select all permissions your agent requires
-            </p>
           </div>
 
           {/* Risk Score Preview */}
           {formData.claimedPermissions.length > 0 && (
-            <div className="bg-accent-50 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-medium text-accent-900">Estimated Risk Score</h3>
-                  <p className="text-sm text-accent-600">Based on requested permissions</p>
+            <div className="bg-surface-50/30 rounded-xl p-5 border border-white/10">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center">
+                  <AlertCircle className="w-5 h-5 text-warning-400 mr-2" />
+                  <div>
+                    <h3 className="text-sm font-medium text-white">Estimated Risk Score</h3>
+                    <p className="text-xs text-gray-400">Based on selections</p>
+                  </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold text-accent-900">
+                  <div className={`text-2xl font-bold font-mono ${calculateRiskScore(formData) > 70 ? 'text-error-400' :
+                    calculateRiskScore(formData) > 40 ? 'text-warning-400' : 'text-success-400'
+                    }`}>
                     {calculateRiskScore(formData)}
                   </div>
-                  <div className="text-sm text-accent-600">/ 100</div>
                 </div>
               </div>
-              <div className="mt-3 bg-accent-200 rounded-full h-2">
+              <div className="w-full bg-surface-200 rounded-full h-2 overflow-hidden">
                 <div
-                  className={`h-2 rounded-full ${
-                    calculateRiskScore(formData) > 70 ? 'bg-error-500' :
-                    calculateRiskScore(formData) > 40 ? 'bg-warning-500' : 'bg-success-500'
-                  }`}
+                  className={`h-full rounded-full transition-all duration-500 ${calculateRiskScore(formData) > 70 ? 'bg-error-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' :
+                    calculateRiskScore(formData) > 40 ? 'bg-warning-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]' : 'bg-success-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]'
+                    }`}
                   style={{ width: `${calculateRiskScore(formData)}%` }}
                 ></div>
               </div>
             </div>
           )}
 
+          {/* Transaction Fee Info */}
+          {isConnected && (
+            <div className="p-4 bg-surface-50/30 rounded-xl border border-white/10 mb-6">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-400">Estimated Transaction Fee:</span>
+                <span className="font-mono text-white">{ESTIMATED_FEE} AMA</span>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">Fee will be paid from your connected wallet</p>
+            </div>
+          )}
+
           {/* Submit Button */}
-          <div className="flex items-center justify-end space-x-4 pt-6 border-t border-accent-200">
-            <Link href="/" className="btn-ghost">
+          <div className="flex items-center justify-end space-x-4 pt-6 border-t border-white/10">
+            <Link href="/" className="inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 disabled:opacity-50 disabled:pointer-events-none uppercase tracking-wider relative overflow-hidden hover:bg-white/5 text-gray-300 hover:text-white">
               Cancel
             </Link>
             <button
               type="submit"
-              disabled={isSubmitting || !formData.artifactHash || formData.claimedPermissions.length === 0}
-              className="btn-primary"
+              disabled={isSubmitting || !formData.artifactHash || formData.claimedPermissions.length === 0 || !isConnected}
+              className="inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 disabled:opacity-50 disabled:pointer-events-none uppercase tracking-wider relative overflow-hidden bg-primary-600 text-white hover:bg-primary-500 shadow-[0_0_15px_rgba(139,92,246,0.5)] px-8 py-3"
             >
               {isSubmitting ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Submitting...
+                  Submitting
                 </>
               ) : (
                 <>
-                  <FileText className="w-4 h-4 mr-2" />
-                  Submit Application
+                  <FileText className="w-5 h-5 mr-2" />
+                  {isConnected ? 'Submit Application' : 'Connect Wallet to Submit'}
                 </>
               )}
             </button>

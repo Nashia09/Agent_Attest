@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Mock credential data
-    const mockCredential = {
+    const mockCredential: any = {
       id: credentialId || 'cred_demo_' + Date.now().toString(36),
       agent_did: agentDid || 'did:example:agent123',
       artifact_hash: 'a1b2c3d4e5f6789012345678901234567890abcdef',
@@ -35,9 +35,40 @@ export async function GET(request: NextRequest) {
       mockCredential.revocation_reason = 'Security policy violation'
     }
 
+    // Check Amadeus Network if we have a credential ID (Entry Hash)
+    let isOnChain = false
+    let chainData: any = null
+
+    if (credentialId && credentialId.length > 20) { // Simple check for potential hash
+      try {
+        // Build workaround for Testnet SSL issues
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+        const { initAmadeus } = await import('@/lib/amadeus')
+        const sdk = await initAmadeus()
+        const tx = await sdk.chain.getTransaction(credentialId)
+        if (tx && tx.result && (tx.result as any).error === 'ok') {
+          isOnChain = true
+          // Attempt to parse metadata or args from the transaction if possible
+          // For now, we mainly verify existence and success
+
+          // If we could access the memo/args, we would parse it here:
+          // const args = tx.tx.action.args
+          // chainData = ...
+
+          // Since we temporarily removed memo, we rely on the tx existence
+        }
+      } catch (e) {
+        console.error("Chain verification failed", e)
+      }
+    }
+
     return NextResponse.json({
       valid: mockCredential.status === 'ACTIVE',
-      credential: mockCredential,
+      credential: {
+        ...mockCredential,
+        is_anchored: isOnChain,
+        network: 'Amadeus Testnet'
+      },
       message: mockCredential.status === 'ACTIVE' ? 'Credential is valid' : `Credential is ${mockCredential.status.toLowerCase()}`
     })
 
