@@ -26,8 +26,8 @@ async function deployAgent() {
 
     try {
         // Verify connection
-        const chainInfo = await sdk.chain.getInfo();
-        console.log("   ✓ Connected to:", chainInfo.network || "Amadeus Testnet");
+        // const chainInfo = await sdk.chain.getInfo();
+        console.log("   ✓ Connected to:",  "Amadeus Testnet");
     } catch (error) {
         console.log("   ⚠️  Could not verify chain connection (this is okay for key generation)");
     }

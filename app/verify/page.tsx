@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Search, Shield, CheckCircle, XCircle, AlertCircle, ArrowRight, ExternalLink } from 'lucide-react'
@@ -28,7 +28,7 @@ interface TransactionSimulation {
   riskScore: number
 }
 
-export default function VerifyPage() {
+function VerifyPageContent() {
   const searchParams = useSearchParams()
   const { toast } = useToast()
   const [searchQuery, setSearchQuery] = useState('')
@@ -366,5 +366,17 @@ export default function VerifyPage() {
         </Link>
       </div>
     </div>
+  )
+}
+
+export default function VerifyPage() {
+  return (
+    <Suspense fallback={
+      <div className="max-w-5xl mx-auto py-12">
+        <div className="text-center text-gray-400">Loading...</div>
+      </div>
+    }>
+      <VerifyPageContent />
+    </Suspense>
   )
 }

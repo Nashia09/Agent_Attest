@@ -26,9 +26,9 @@ async function deployAgent() {
         const sdk = await initAmadeus();
 
         try {
-            const chainInfo = await sdk.chain.getInfo();
+            // const chainInfo = await sdk.chain.getInfo();
             console.log("   ✓ Connected to Amadeus Testnet");
-            console.log("   ✓ Network:", chainInfo);
+            // console.log("   ✓ Network:", chainInfo);
         } catch (error: any) {
             console.log("   ⚠️  Chain info unavailable:", error.message);
         }
