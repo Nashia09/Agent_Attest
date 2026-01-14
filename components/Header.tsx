@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { Shield, Menu, X } from 'lucide-react'
+import ConnectWallet from '@/components/ConnectWallet'
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -58,6 +59,9 @@ export default function Header() {
                 <option value="admin">Admin</option>
               </select>
             </div>
+
+            {/* Connect Wallet Button */}
+            <ConnectWallet />
           </nav>
 
           {/* Mobile Menu Button */}
@@ -98,6 +102,9 @@ export default function Header() {
                   <option value="verifier">Verifier</option>
                   <option value="admin">Admin</option>
                 </select>
+              </div>
+              <div className="pt-3 border-t border-white/10">
+                <ConnectWallet />
               </div>
             </nav>
           </div>

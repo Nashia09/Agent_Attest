@@ -3,8 +3,9 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Upload, FileText, Check, AlertCircle, ArrowLeft, Shield } from 'lucide-react'
+import { Upload, FileText, Check, AlertCircle, ArrowLeft, Shield, Wallet } from 'lucide-react'
 import { useToast } from '@/components/ToastProvider'
+import { useWallet } from '@/lib/WalletContext'
 import CryptoJS from 'crypto-js'
 
 interface FormData {
@@ -26,6 +27,7 @@ const PERMISSION_OPTIONS = [
 export default function ApplyPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const { isConnected, address, balance } = useWallet()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isCalculatingHash, setIsCalculatingHash] = useState(false)
   const [formData, setFormData] = useState<FormData>({
@@ -35,6 +37,9 @@ export default function ApplyPage() {
     contactEmail: '',
     claimedPermissions: []
   })
+
+  // Estimated transaction fee in AMA
+  const ESTIMATED_FEE = 0.001
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -66,10 +71,27 @@ export default function ApplyPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Check wallet connection
+    if (!isConnected) {
+      toast('warning', 'Wallet Not Connected', 'Please connect your Amadeus wallet to submit an application')
+      return
+    }
+
+    // Check sufficient balance
+    if (balance !== null && balance < ESTIMATED_FEE) {
+      toast('error', 'Insufficient Balance', `You need at least ${ESTIMATED_FEE} AMA to submit this application`)
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
-      // Mock API call
+      // In a real implementation, this would:
+      // 1. Create a transaction using the wallet
+      // 2. Sign it with the connected wallet
+      // 3. Submit to Amadeus network
+      // For now, we'll simulate the process
       await new Promise(resolve => setTimeout(resolve, 1500))
 
       const applicationId = 'app_' + Date.now().toString(36)
@@ -78,6 +100,7 @@ export default function ApplyPage() {
       const application = {
         id: applicationId,
         ...formData,
+        walletAddress: address,
         status: 'PENDING',
         submittedAt: new Date().toISOString(),
         riskScore: calculateRiskScore(formData)
@@ -110,6 +133,21 @@ export default function ApplyPage() {
           Back to Home
         </Link>
       </div>
+
+      {/* Wallet Connection Notice */}
+      {!isConnected && (
+        <div className="mb-6 p-4 bg-warning-500/10 border border-warning-500/30 rounded-xl backdrop-blur-sm">
+          <div className="flex items-start gap-3">
+            <Wallet className="w-5 h-5 text-warning-400 mt-0.5" />
+            <div>
+              <h3 className="text-sm font-semibold text-warning-300 mb-1">Wallet Connection Required</h3>
+              <p className="text-xs text-warning-200/80">
+                You need to connect your Amadeus wallet to submit an application. Transaction fees will be paid from your connected wallet.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="rounded-xl border border-white/10 bg-surface-900 shadow-xl transition-all hover:border-primary-500/30 relative overflow-hidden p-8 bg-surface-900/40 border-primary-500/20 backdrop-blur-xl relative overflow-hidden">
         {/* Decorative background element */}
@@ -303,6 +341,17 @@ export default function ApplyPage() {
             </div>
           )}
 
+          {/* Transaction Fee Info */}
+          {isConnected && (
+            <div className="p-4 bg-surface-50/30 rounded-xl border border-white/10 mb-6">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-400">Estimated Transaction Fee:</span>
+                <span className="font-mono text-white">{ESTIMATED_FEE} AMA</span>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">Fee will be paid from your connected wallet</p>
+            </div>
+          )}
+
           {/* Submit Button */}
           <div className="flex items-center justify-end space-x-4 pt-6 border-t border-white/10">
             <Link href="/" className="inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 disabled:opacity-50 disabled:pointer-events-none uppercase tracking-wider relative overflow-hidden hover:bg-white/5 text-gray-300 hover:text-white">
@@ -310,7 +359,7 @@ export default function ApplyPage() {
             </Link>
             <button
               type="submit"
-              disabled={isSubmitting || !formData.artifactHash || formData.claimedPermissions.length === 0}
+              disabled={isSubmitting || !formData.artifactHash || formData.claimedPermissions.length === 0 || !isConnected}
               className="inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 disabled:opacity-50 disabled:pointer-events-none uppercase tracking-wider relative overflow-hidden bg-primary-600 text-white hover:bg-primary-500 shadow-[0_0_15px_rgba(139,92,246,0.5)] px-8 py-3"
             >
               {isSubmitting ? (
@@ -321,7 +370,7 @@ export default function ApplyPage() {
               ) : (
                 <>
                   <FileText className="w-5 h-5 mr-2" />
-                  Submit Application
+                  {isConnected ? 'Submit Application' : 'Connect Wallet to Submit'}
                 </>
               )}
             </button>
