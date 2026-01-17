@@ -65,12 +65,23 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // --- ZKVERIFY & ARWEAVE MOCK DATA ---
+    // In a real scenario, we would verify the proof submitted via POST or attached to the credential
+    // For this demo, we assume valid active credentials have a verified proof
+    const isZkVerified = mockCredential.status === 'ACTIVE';
+    // Generate a consistent mock Arweave TX ID based on the credential ID
+    const arweaveTxId = isZkVerified ? `ar_${mockCredential.id.split('_')[1] || 'demo'}_${mockCredential.agent_did.slice(-4)}` : null;
+
+    // ------------------------------------
+
     return NextResponse.json({
       valid: mockCredential.status === 'ACTIVE',
       credential: {
         ...mockCredential,
         is_anchored: isOnChain,
-        network: 'Amadeus Testnet'
+        network: 'Amadeus Testnet',
+        arweave_tx_id: arweaveTxId,
+        zk_verified: isZkVerified
       },
       message: mockCredential.status === 'ACTIVE' ? 'Credential is valid' : `Credential is ${mockCredential.status.toLowerCase()}`
     })
