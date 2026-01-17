@@ -17,6 +17,7 @@
     "@types/node": "^20.10.5",
     "@types/react": "^18.2.42",
     "@types/react-dom": "^18.2.17",
+    "arweave": "^1.15.7",
     "autoprefixer": "^10.4.16",
     "axios": "^1.6.2",
     "clsx": "^2.1.1",

@@ -27,10 +27,56 @@ async function deployAgent() {
     try {
         // Verify connection
         // const chainInfo = await sdk.chain.getInfo();
-        console.log("   ✓ Connected to:",  "Amadeus Testnet");
+        console.log("   ✓ Connected to:", "Amadeus Testnet");
     } catch (error) {
         console.log("   ⚠️  Could not verify chain connection (this is okay for key generation)");
     }
+
+    // --- ARWEAVE INTEGRATION START ---
+    let arweaveTxId = 'Pending...';
+    try {
+        console.log("\n   📦 Initializing Arweave Storage...");
+        const Arweave = require('arweave');
+        const arweave = Arweave.init({
+            host: 'arweave.net',
+            port: 443,
+            protocol: 'https'
+        });
+
+        // Generate a random wallet for demo purposes (would normally load a funded keyfile)
+        const arKey = await arweave.wallets.generate();
+        const arAddress = await arweave.wallets.jwkToAddress(arKey);
+        console.log("   ✓ Arweave Wallet Generated:", arAddress);
+
+        console.log("   📤 Uploading artifact to Permaweb...");
+        const transaction = await arweave.createTransaction({
+            data: Buffer.from(artifactHash, 'utf-8')
+        }, arKey);
+
+        transaction.addTag('App-Name', 'AgentAttest');
+        transaction.addTag('App-Version', '1.0.0');
+        transaction.addTag('Content-Type', 'text/plain');
+        transaction.addTag('Agent-DID', did);
+
+        await arweave.transactions.sign(transaction, arKey);
+
+        // Try to post (will likely fail with 400/500 due to no funds, so we mock if it does)
+        const uploader = await arweave.transactions.post(transaction);
+
+        if (uploader.status === 200 || uploader.status === 202) {
+            console.log("   ✅ Upload successful!");
+            arweaveTxId = transaction.id;
+        } else {
+            console.log("   ⚠️  Upload failed (likely no funds), using MOCK ID for demo.");
+            arweaveTxId = 'ar_mock_' + crypto.randomBytes(4).toString('hex');
+        }
+
+    } catch (e: any) {
+        console.log("   ⚠️  Arweave integration skipped:", e.message);
+        arweaveTxId = 'ar_mock_fallback_' + Date.now();
+    }
+    console.log("   ✓ Arweave TX ID:", arweaveTxId);
+    // --- ARWEAVE INTEGRATION END ---
 
     // Step 5: Attempt to register agent on-chain
     console.log("\n5️⃣  Attempting to register agent on-chain...");
@@ -72,11 +118,13 @@ async function deployAgent() {
     console.log(did);
     console.log("\n🔐 Artifact Hash:");
     console.log(artifactHash);
+    console.log("\n📦 Arweave TX:");
+    console.log(arweaveTxId);
     console.log("\n🔑 Private Key (SAVE THIS SECURELY!):");
     console.log(keys.privateKey);
     console.log("\n" + "=".repeat(70));
     console.log("\n✅ Next Steps:");
-    console.log("   1. Copy the DID and Artifact Hash above");
+    console.log("   1. Copy the DID, Artifact Hash, and Arweave TX above");
     console.log("   2. Navigate to: http://localhost:3000/apply");
     console.log("   3. Fill in the application form with these credentials");
     console.log("   4. Submit your application for verification");

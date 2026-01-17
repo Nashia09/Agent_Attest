@@ -20,6 +20,8 @@ interface Credential {
   revocationReason?: string
   anchorTx?: string
   maxTransactionValue?: number
+  zkVerified?: boolean
+  arweaveTxId?: string
 }
 
 interface TransactionSimulation {
@@ -79,7 +81,9 @@ function VerifyPageContent() {
         revokedAt: apiCred.revoked_at,
         revocationReason: apiCred.revocation_reason,
         anchorTx: apiCred.anchor_tx || apiCred.id, // Use ID as anchor if anchor_tx missing
-        maxTransactionValue: apiCred.max_transaction_value
+        maxTransactionValue: apiCred.max_transaction_value,
+        zkVerified: apiCred.zk_verified,
+        arweaveTxId: apiCred.arweave_tx_id
       }
 
       setCredential(realCredential)
@@ -249,12 +253,45 @@ function VerifyPageContent() {
                 </div>
               </div>
 
+              {credential.zkVerified && (
+                <div className="mt-4 p-3 bg-indigo-500/10 border border-indigo-500/30 rounded-lg flex items-center shadow-[0_0_15px_rgba(99,102,241,0.2)] animate-pulse-slow">
+                  <div className="mr-3 p-1.5 bg-indigo-500/20 rounded-full">
+                    <Shield className="w-5 h-5 text-indigo-400" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-indigo-300">Verified by zkVerify</div>
+                    <div className="text-xs text-indigo-400/70">Zero-Knowledge Proof Validated</div>
+                  </div>
+                  <CheckCircle className="w-5 h-5 text-indigo-400 ml-auto" />
+                </div>
+              )}
+
               {credential.revokedAt && (
                 <div className="p-3 bg-error-500/10 border border-error-500/30 rounded-lg">
                   <span className="text-sm text-error-400 font-semibold block mb-1">Revocation Details</span>
                   <div className="text-sm text-error-200">
                     <div>Date: {new Date(credential.revokedAt).toLocaleDateString()}</div>
                     <div>Reason: {credential.revocationReason}</div>
+                  </div>
+                </div>
+              )}
+
+              {credential.arweaveTxId && (
+                <div className="mt-4 pt-4 border-t border-white/10">
+                  <span className="text-sm text-gray-400 flex items-center mb-1">
+                    <ExternalLink className="w-3 h-3 mr-1 text-primary-400" />
+                    Stored on Arweave
+                  </span>
+                  <div className="flex items-center justify-between p-2 bg-black/20 rounded border border-white/5 hover:border-primary-500/20 transition-colors">
+                    <span className="font-mono text-xs text-primary-300 truncate max-w-[200px]">{credential.arweaveTxId}</span>
+                    <a
+                      href={`https://viewblock.io/arweave/tx/${credential.arweaveTxId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-bold text-white bg-primary-600 hover:bg-primary-500 px-2 py-1 rounded transition-colors"
+                    >
+                      View Data
+                    </a>
                   </div>
                 </div>
               )}
